@@ -1,0 +1,67 @@
+const int latchPin = 12;//Pin connected to ST_CP of 74HC595
+const int clockPin = 8;//Pin connected to SH_CP of 74HC595 
+const int dataPin = 11; //Pin connected to DS of 74HC595 
+const int LED = 3; // GEEFT AAN DAT SENSOR IETS ZIET (Pin 3)
+const int IRsensor = 2; //OUT van de sensor gaat in arduino (Pin 2)
+const int BUTTON1 = 0; //Knop 1 die lift roept (Pin 0)
+const int BUTTON2 = 1; //Knop 2 die lift roept (Pin 1)
+const int BUTTONLED1 = 4; // 1e Knop van LED (Pin 4)
+const int BUTTONLED2 = 5; // 2e Knop van LED (Pin 5)
+
+/*=======================================================================================================
+//display 0,1,2,3,4,5,6,7,8
+Number 0 :  00000011     3 
+Number 1 :  10101111     159 
+Number 2 :  00100101     37
+Number 3 :  00001101     13
+Number 4 :  10011001     153                    // hier worden nummers aangegeven die op display te zien kunnen worden
+Number 5 :  01001001     73
+Number 6 :  01000001     65
+Number 7 :  00011111     31
+Number 8 :  00000001     1
+
+To display the dot, simply subtract 1.
+example : 1 - 1 = 0  or b0000000 0x0 to display 8
+*/
+/*In order to display zero your array has decimal number 3. However using the shift register
+it is actuall the binary number that is uploaded into the resitsre: zie the table above for zero: 00000011. 
+*/
+
+void setup ()                               // programma begint met starten
+{
+  pinMode(latchPin, OUTPUT);                // informatie gaat uit arduino is een OUTput
+  pinMode(dataPin, OUTPUT); 
+  pinMode(clockPin, OUTPUT);    
+  pinMode(LED, OUTPUT);                     // arduino geeft signaal uit om led te laten branden of uit te zetten
+  pinMode(IRsensor, INPUT);                 // sensor geeft signaal aan arduino en LED brand dan
+  pinMode(BUTTON1, INPUT);                  // geeft signaal aan dat er op button1 wordt gedrukt
+  pinMode(BUTTON2, INPUT);                  // geeft signaal aan dat er op button2 wordt gedrukt
+  pinMode(BUTTONLED1, OUTPUT);              // arduino geeft signaal aan als er wordt gedrukt button led gaat aan
+  pinMode(BUTTONLED2, OUTPUT);              // als er op button 2 gedrukt wordt gaat led aan
+}
+void loop(){
+  
+  if(digitalRead(BUTTON1) == LOW){                    //als je button 1 drukt dan gaat het LED branden
+    digitalWrite(BUTTONLED1, HIGH);                   
+  } 
+  
+  if(digitalRead(BUTTON2) == LOW){                    // hier is het als je button 2 drukt dan gaat de LED branden
+    digitalWrite(BUTTONLED2, HIGH);
+  }
+
+   if(digitalRead(IRsensor) == HIGH){                  // als sensor niks ziet
+  digitalWrite(LED, LOW);                              // dan schijnt de LED niet
+  digitalWrite(latchPin, LOW);                          
+  shiftOut(dataPin,clockPin,MSBFIRST,65);               // display geeft niet mijn verdieping aan
+  digitalWrite(latchPin, HIGH);
+   }
+
+  else{                                                     // geeft aan dat ALS
+    digitalWrite(LED, HIGH);                                // LED brandt dus sensor ziet iets
+    digitalWrite(BUTTONLED1, LOW);                          // Button1 led gaat uit
+    digitalWrite(BUTTONLED2, LOW);                          // Button2 led gaat uit
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin,clockPin,MSBFIRST, 3);                 // dan laat display mijn verdieping zien dus in dit geval 0
+    digitalWrite(latchPin, HIGH);
+  }
+}
