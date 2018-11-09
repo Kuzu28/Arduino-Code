@@ -1,0 +1,311 @@
+  //master versie 5
+  #include 
+  #include 
+  
+  
+  boolean moveUp = false;                       // Should the motor move clockwise
+  boolean moveDown = false;                     // Should the motor move counter-clockwise
+  
+  // Setup stepper
+  #define IN1 37
+  #define IN2 39
+  #define IN3 41
+  #define IN4 43
+  
+  // For stepper
+  int steps = 0;
+  boolean clockwise = true;
+  
+  // alles voor numbpad
+  #define ROWS 4
+  #define COLS 3
+  const char keys [ ROWS ][ COLS ] = {
+    { '1' , '2' , '3'} ,
+    { '4' , '5' , '6'} ,
+    { '7' , '8' , '9'} ,
+    { '\0' , '9' , '\0'}
+  };
+  const byte rowPins [ ROWS ] = {2 , 3 , 4 , 5};
+  const byte colPins [ COLS ] = {6 , 7 , 8};
+  Keypad keypad = Keypad ( makeKeymap ( keys ) , rowPins , colPins , ROWS , COLS );
+  
+  //vaste waardes
+  int currentfloor = 0;
+  int Buttonup = 0;
+  int Buttondown = 0;
+  int goToFloor;
+  int number;
+  
+  void setup() {
+    Wire.begin(); // join i2c bus (address optional for master)
+    //setup voor stepper
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+    Serial.begin(9600);
+  }
+  void loop() {
+    Serial.print("current floor:");
+    Serial.println(currentfloor);
+    Serial.print("go to floor:");
+    Serial.println(goToFloor);
+    // ---------------------------
+    //  I2C reguest
+    // ---------------------------
+  
+    //Ophalen van currentlocation
+    Wire.requestFrom(10, 2);    // request 2 bytes from slave device #10
+    while (Wire.available()) { // slave may send less than requested
+      int A = Wire.read();
+  
+      if (A == 1) {
+        currentfloor = 0;
+      }
+    }
+    Wire.requestFrom(11, 2);    // request 2 bytes from slave device #10
+    while (Wire.available()) { // slave may send less than requested
+      int A = Wire.read();
+  
+      if (A == 1) {
+        currentfloor = 1;
+      }
+    }
+    Wire.requestFrom(12, 2);    // request 2 bytes from slave device #12
+    while (Wire.available()) { // slave may send less than requested
+      int A = Wire.read();
+  
+      if (A == 1) {
+        currentfloor = 2;
+      }
+    }
+    Wire.requestFrom(13, 2);    // request 2 bytes from slave device #13
+    while (Wire.available()) { // slave may send less than requested
+      int A = Wire.read();
+  
+      if (A == 1) {
+        currentfloor = 3;
+      }
+    }
+    //------------------------------
+    //  I2C transmissie naar slaves
+    //------------------------------
+  
+    //versturen van locatie naar slaves
+    {
+      Wire.beginTransmission(10);//verzonden naar arduino
+      Wire.write(currentfloor);  //verdieping 0
+      Wire.endTransmission();    // stop transmitting
+    }
+    {
+      Wire.beginTransmission(11);//verzonden naar arduino
+      Wire.write(currentfloor);  //verdieping 1
+      Wire.endTransmission();    // stop transmitting
+    }
+    {
+      Wire.beginTransmission(12);//verzonden naar arduino
+      Wire.write(currentfloor);  //verdieping 2
+      Wire.endTransmission();    // stop transmitting
+    }
+    {
+      Wire.beginTransmission(13);//verzonden naar arduino
+      Wire.write(currentfloor);  //verdieping 3
+      Wire.endTransmission();    // stop transmitting
+    }
+  
+    //---------------------------
+    //  I2C request voor butttons
+    //---------------------------
+    Wire.requestFrom(10, 2);    // request 2 bytes from slave device #10
+    while (Wire.available()) {  // slave may send less than requested
+      int l = Wire.read();
+  
+      if (l == 5) {             
+        
+        goToFloor = 0;
+      }
+      else if (l == 6) {
+        
+        goToFloor = 0;
+      }
+    }
+    Wire.requestFrom(11, 2);    // request 2 bytes from slave device #11
+    while (Wire.available()) { // slave may send less than requested
+      int l = Wire.read();
+  
+      if (l == 5) {
+        
+        goToFloor = 1;
+      }
+      else if (l == 6) {
+        
+        goToFloor = 1;
+      }
+    }
+    Wire.requestFrom(12, 2);    // request 2 bytes from slave device #12
+    while (Wire.available()) { // slave may send less than requested
+      int l = Wire.read();
+  
+      if (l == 5) {
+       
+        goToFloor = 2;
+      }
+      else if (l == 6) {
+        
+        goToFloor = 2;
+      }
+    }
+    Wire.requestFrom(13, 2);    // request 2 bytes from slave device #13
+    while (Wire.available()) { // slave may send less than requested
+      int l = Wire.read();
+      if (l == 5) {
+        
+        goToFloor = 3;
+      }
+      if (l == 6) {
+        
+        goToFloor = 3;
+      }
+    }
+    //--------------------
+    //numbpad
+    //--------------------
+    numbpad();             //start numbpad function
+  
+    //--------------------
+    //Lift moving
+    //--------------------
+    if (goToFloor > currentfloor) {
+      Serial.println("lift gaat omhoog");
+      moveUp = true;                      
+      moveDown = false;     //lift moving up
+    }
+    if (goToFloor < currentfloor) {
+      Serial.println("lift gaat omlaag");
+      moveUp = false;
+      moveDown = true;      //lift moving down
+    }
+    if (goToFloor == currentfloor) {
+      Serial.println("lift is op bestemming");
+  
+      //bestemming aangekomen zenden naar verdieping 1
+      if (goToFloor==1){
+      Wire.beginTransmission(11);//verzonden naar arduino
+      Wire.write(7);  //verdieping 1
+      Wire.endTransmission();    // stop transmitting
+      }
+      //bestemming aangekomen zenden naar verdieping 2
+      if (goToFloor==2){
+      Wire.beginTransmission(12);//verzonden naar arduino
+      Wire.write(7);  //verdieping 1
+      Wire.endTransmission();    // stop transmitting
+      }
+      moveUp = false;
+      moveDown = false;
+    }
+    
+    moveLift();
+  
+    //-----------------------
+    //  EINDE LOOP
+    //-----------------------
+  }
+  
+  void numbpad() {
+    char key;
+    key = keypad.getKey () - '0';
+    int input = key ;
+    if (input == 9) {
+      number = 0;
+      goToFloor = 0;
+    }
+    if (input == 1) {
+      number = 1;
+      goToFloor = 1;
+    }
+    if (input == 2) {
+      number = 2;
+      goToFloor = 2;
+    }
+    if (input == 3) {
+      number = 3;
+      goToFloor = 3;
+    }
+  }
+  
+  
+  //----------------------
+  //  for stepper motor
+  //----------------------
+  void moveLift() {
+    // Controls the lift controller
+    if (moveUp) {
+      Serial.println("going up");
+      liftController(true);
+    } else if (moveDown) {
+      Serial.println("going down");
+      liftController(false);
+    }
+  }
+  
+  void liftController(boolean up) {
+    // Controls how many the stepping motor should rotate
+    clockwise = !up;
+  
+  
+    for (int i = 0; i < 1000; i++) { // remove or increase when needed,
+      // with this for loop the motor moves more between requests.
+      stepper();
+      delayMicroseconds(2000);
+    }
+  }
+  
+  // http://www.nmbtc.com/step-motors/engineering/full-half-and-microstepping/
+  // Using two-phase fullstep
+  void stepper() {
+    // controls the steppenmotor
+    switch (steps) {
+      case 0:
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, LOW);
+        break;
+      case 1:
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, LOW);
+        break;
+      case 2:
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, HIGH);
+        break;
+      case 3:
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, HIGH);
+        break;
+      default:
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, LOW);
+        break;
+    }
+  
+    if (clockwise) {
+      steps++;
+    } else {
+      steps--;
+    }
+  
+    if (steps > 3) {
+      steps = 0;
+    } else if (steps < 0) {
+      steps = 3;
+    }
+  }
