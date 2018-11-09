@@ -1,0 +1,47 @@
+const int latchPin = 12;//Pin connected to ST_CP of 74HC595
+const int clockPin = 8;//Pin connected to SH_CP of 74HC595 
+const int dataPin = 11; //Pin connected to DS of 74HC595 
+/*=======================================================================================================
+//display 0,1,2,3,4,5,6,7,8
+Number 0 :  00000011     3 
+Number 1 :  10101111     159 
+Number 2 :  00100101     37
+Number 3 :  00001101     13                               // nummers van 0 tot 9 aangegeven in andere cijfers.
+Number 4 :  10011001     153
+Number 5 :  01001001     73
+Number 6 :  01000001     65
+Number 7 :  00011111     31
+Number 8 :  00000001     1
+
+To display the dot, simply subtract 1.
+example : 1 - 1 = 0  or b0000000 0x0 to display 8
+*/
+/*In order to display zero your array has decimal number 3. However using the shift register
+it is actuall the binary number that is uploaded into the resitsre: zie the table above for zero: 00000011. 
+*/
+int datArray[9] = {3, 159, 37, 13, 153, 73, 65, 31, 1}; // array without the decimal        // wordt aangegeven hoeveel cijfers er komen in dit geval 9
+
+void setup ()
+{
+  //set pins to output
+
+  pinMode(latchPin,OUTPUT);
+  pinMode(clockPin, OUTPUT);                //dit zijn pinnen die verbonden zijn met de shift register
+  pinMode(dataPin, OUTPUT);
+  // hier invullen: 2 commands: other pins of the shift register
+  
+}
+void loop()
+{
+  //loop from 0 to 8
+  for(int num = 0; num < 9; num++)
+  {
+    // hier invullen: 1 command for enable the shift register. See the technical manual.
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin,clockPin,MSBFIRST,datArray[num]);
+    //
+    // hier invullen: 1 command to upload the data from shift register to storage register.See the technical manual. 
+    digitalWrite(latchPin, HIGH);
+    delay(1000); //wait for a second
+  }
+}
