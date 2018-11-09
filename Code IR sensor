@@ -1,0 +1,13 @@
+void setup() {
+pinMode (2, INPUT);                       // deze gaat de arduino pinnen in pin 2
+pinMode (3, OUTPUT);                     //  deze gaat van de LED naar de arduino in pin 3
+}
+
+void loop() {
+  if(digitalRead(2) == HIGH) {          // als sensor niks detecteer 
+  digitalWrite (3, LOW);                // dan brand LED niet
+  }
+  else{                                 // else geeft aan als boven niet het geval is
+    digitalWrite(3, HIGH);              // dan gaat de LED high dus gaat branden.
+  }
+}
